@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2025-09-16
+### Added
+### Enhancements
+Dynamic Partition Sizing:
+Replaced static partition sizes (except EFI) with dynamic calculations based on total drive size.
+EFI partition remains fixed at 300MB.
+Remaining space is distributed using the following ratios:
+NTFS: 16.67%
+LVM: 41.67%
+FAT32: 16.67%
+EXT3: 41.67%
+## Logic Improvements
+Added logic to:
+Detect total drive size in MB.
+Subtract EFI size and apply ratios to remaining space.
+Log calculated partition sizes for transparency.
+## Preserved Functionality
+ISO validation, dry-run execution, logging, and EFI boot entry setup remain unchanged.
+Image restoration and Windows WIM application logic preserved.
 ---
 
 ## [1.3.0] - 2025-09-15
@@ -40,4 +59,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.0] - 2025-08-15
 ### Added
 - Initial script scaffold with parameter parsing and logging
+
 - Drive validation and admin privilege check
