@@ -1,5 +1,4 @@
-
-<# 
+<#
 .SYNOPSIS
     TriBootForge – Automates multi-OS partitioning and boot setup for CentOS, Ubuntu, and Windows.
 
@@ -11,7 +10,7 @@
     Cajunjon
 
 .VERSION
-    1.3.1
+    1.3.2
 
 .NOTES
     Requires administrator privileges and presence of parted.exe, efibootmgr.exe, dd, and wimlib-imagex.
@@ -41,7 +40,7 @@ function Log { param($msg); $sw.WriteLine("[$(Get-Date)] $msg"); $sw.Flush() }
 function Execute {
     param ($cmd)
     if ($DryRun) {
-        Write-Host "[DRY-RUN] $cmd"
+        Write-Verbose "[DRY-RUN] $cmd"
         Log "[DRY-RUN] $cmd"
     } else {
         Invoke-Expression $cmd
@@ -51,7 +50,7 @@ function Execute {
 
 # Admin check
 if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-    Write-Host "Please run as administrator"
+    Write-Information "Please run as administrator"
     exit 1
 }
 
@@ -59,7 +58,7 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 foreach ($util in @("parted.exe", "efibootmgr.exe")) {
     $path = Join-Path $env:SystemRoot "System32\$util"
     if (!(Test-Path $path)) {
-        Write-Host "$util not found. Attempting install..."
+        Write-Information "$util not found. Attempting install..."
         Execute "Install-Package -Name $util -Force"
     }
 }
@@ -68,7 +67,7 @@ foreach ($util in @("parted.exe", "efibootmgr.exe")) {
 $DRIVE = "disk$DriveType"
 $disk = Get-Disk | Where-Object { $_.FriendlyName -eq $DriveType }
 if (-not $disk) {
-    Write-Host "$DRIVE not found."
+    Write-Information "$DRIVE not found."
     exit 1
 }
 
@@ -88,12 +87,12 @@ $fat32_size = [math]::Round($remaining_size_mb * 0.1667)
 $ext3_size = [math]::Round($remaining_size_mb * 0.4167)
 
 # Log calculated sizes
-Write-Host "Calculated Partition Sizes:"
-Write-Host "EFI: $efi_size MB"
-Write-Host "NTFS: $ntfs_size MB"
-Write-Host "LVM: $lvm_size MB"
-Write-Host "FAT32: $fat32_size MB"
-Write-Host "EXT3: $ext3_size MB"
+Write-Output "Calculated Partition Sizes:"
+Write-Output "EFI: $efi_size MB"
+Write-Output "NTFS: $ntfs_size MB"
+Write-Output "LVM: $lvm_size MB"
+Write-Output "FAT32: $fat32_size MB"
+Write-Output "EXT3: $ext3_size MB"
 
 # Image definitions
 $centos_version = "CentOS-Stream-Image-GNOME-Live.x86_64-9-202507151507.iso"
@@ -101,26 +100,26 @@ $Ubuntu_version = "ubuntu-24.04.3-desktop-amd64.iso"
 $win_version = "SERVER_EVAL_x64FRE_en-us.wim"
 
 # Locate images
-function Locate-Image($filename) {
+function Find-Image($filename) {
     $path = Get-ChildItem -Path C:\ -Filter $filename -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 | Split-Path -Parent
-    if (-not $path) { Write-Host "$filename not found."; exit 1 }
+    if (-not $path) { Write-Information "$filename not found."; exit 1 }
     return $path
 }
-$Ubuntu_img_path = Locate-Image $Ubuntu_version
-$centos_img_path = Locate-Image $centos_version
+$Ubuntu_img_path = Find-Image $Ubuntu_version
+$centos_img_path = Find-Image $centos_version
 
 # ISO hybrid check (placeholder logic)
-function Is-HybridISO($isoPath) {
+function Test-HybridISO($isoPath) {
     return $true
 }
 
-function Validate-ISO($isoPath) {
+function Test-ISOValidity($isoPath) {
     if (-not (Test-Path $isoPath)) {
-        Write-Host "ISO not found: $isoPath"
+        Write-Information "ISO not found: $isoPath"
         exit 1
     }
-    if (-not (Is-HybridISO $isoPath)) {
-        Write-Host "$isoPath is not hybrid. Cannot raw-write."
+    if (-not (Test-HybridISO $isoPath)) {
+        Write-Information "$isoPath is not hybrid. Cannot raw-write."
         exit 1
     }
     Log "$isoPath passed hybrid check"
@@ -157,8 +156,8 @@ Execute "$parted \\.\$DRIVE set 5 lvm on"
 # Restore ISO images
 $centos_iso = Join-Path $centos_img_path $centos_version
 $ubuntu_iso = Join-Path $Ubuntu_img_path $Ubuntu_version
-Validate-ISO $centos_iso
-Validate-ISO $ubuntu_iso
+Test-ISOValidity $centos_iso
+Test-ISOValidity $ubuntu_iso
 Execute "dd if=`"$centos_iso`" of=`"${DRIVE}3`" bs=1M conv=fsync"
 Execute "dd if=`"$ubuntu_iso`" of=`"${DRIVE}5`" bs=1M conv=fsync"
 
@@ -178,10 +177,10 @@ if (Test-Path "$win_path\$win_version") {
 }
 
 # EFI boot entries
-Execute "efibootmgr -c -d `$DRIVE`p1 -L 'EFI Boot' -l '\EFI\BOOT\BOOTX64.EFI'"
-Execute "efibootmgr -c -d `$DRIVE`p2 -L 'Windows Boot' -l '\WINDOWS\SYSTEM32\WINLOAD.EFI'"
-Execute "efibootmgr -c -d `$DRIVE`p5 -L 'Ubuntu Boot' -l '\EFI\Ubuntu\grubx64.efi'"
+Execute "efibootmgr -c -d `$DRIVE`p1 -L 'EFI Boot' -l '\\EFI\\BOOT\\BOOTX64.EFI'"
+Execute "efibootmgr -c -d `$DRIVE`p2 -L 'Windows Boot' -l '\\WINDOWS\\SYSTEM32\\WINLOAD.EFI'"
+Execute "efibootmgr -c -d `$DRIVE`p5 -L 'Ubuntu Boot' -l '\\EFI\\Ubuntu\\grubx64.efi'"
 
-Write-Host "TriBootForge execution complete."
+Write-Verbose "TriBootForge execution complete."
 Log "TriBootForge completed successfully."
 $sw.Close()
