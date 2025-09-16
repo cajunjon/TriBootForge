@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.2] - 2025-09-16
+## Code Quality Improvements
+## Replaced Write-Host with:
+Write-Verbose for dry-run and completion messages.
+Write-Output for general output.
+Write-Information for status and error messages.
+This improves compatibility with non-interactive hosts and aligns with PowerShell best practices.
+## Function Naming Updates
+## Renamed functions to use approved PowerShell verbs:
+Locate-Image → Find-Image
+Is-HybridISO → Test-HybridISO
+Validate-ISO → Test-ISOValidity
+These changes improve script readability and compliance with PowerShell standards.
+## Encoding Fix
+Script now uses Unicode BOM encoding to ensure compatibility with editors and environments that require BOM for non-ASCII characters.
+
+
 ## [1.3.1] - 2025-09-16
 ### Added
 ### Enhancements
@@ -61,3 +78,4 @@ Image restoration and Windows WIM application logic preserved.
 - Initial script scaffold with parameter parsing and logging
 
 - Drive validation and admin privilege check
+
